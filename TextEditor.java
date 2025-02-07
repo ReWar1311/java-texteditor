@@ -1,5 +1,7 @@
 package texteditor;
 import java.util.*;
+import java.io.*;
+
 
 class TextEditor {
     private Node text;
@@ -25,6 +27,7 @@ class TextEditor {
         }
     }
     public void Delete(int k){
+        Node temp = this.text.next;
         while(k >= 0){
             if (this.text.prev == null){
                 break;
@@ -32,6 +35,9 @@ class TextEditor {
             this.text = this.text.prev;
             this.text.next.remove();
             k--;
+        }
+        if (temp != null){
+            this.text.next = temp;
         }
     }
     public void MoveCursor(int k){
@@ -71,6 +77,28 @@ class TextEditor {
         System.out.println();
     }
     public void Save(){
+        File file = new File(this.filename+"--v"+version+".txt");
+        try {
+            FileWriter writer = new FileWriter(file);
+            Node temp = this.text;
+            if (temp != null) {
+                while(temp.prev != null){
+                    temp = temp.prev;
+                }
+                while(temp.next != null){
+                    if (temp.value != '\0') {
+                        writer.write(temp.value);
+                    }
+                    temp = temp.next;
+                }
+                if (temp.value != '\0') {
+                    writer.write(temp.value);
+                }
+            }
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         System.out.println("Saved file: " + this.filename+"--v"+version+".txt");
         version++;
     }
