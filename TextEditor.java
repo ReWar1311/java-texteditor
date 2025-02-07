@@ -26,12 +26,14 @@ class TextEditor {
             this.text.next = temp;
         }
     }
-    public void Delete(int k){
+    public String Delete(int k){
         Node temp = this.text.next;
-        while(k >= 0){
+        String deleted = "";
+        while(k > 0){
             if (this.text.prev == null){
                 break;
             }
+            deleted = this.text.value + deleted;
             this.text = this.text.prev;
             this.text.next.remove();
             k--;
@@ -39,8 +41,9 @@ class TextEditor {
         if (temp != null){
             this.text.next = temp;
         }
+        return deleted;
     }
-    public void MoveCursor(int k){
+    public int MoveCursor(int k){
         if (k > 0){
             while(k > 0){
                 if (this.text.next != null){
@@ -63,6 +66,7 @@ class TextEditor {
                 }
             }
         }
+        return k;
     }
     public void Print(){
         Node temp = this.text;
@@ -102,27 +106,52 @@ class TextEditor {
         System.out.println("Saved file: " + this.filename+"--v"+version+".txt");
         version++;
     }
+    public static void handler(TextEditor editor, Stack undoStack,String line){
+        String[] parts = line.split(" ");
+        if (parts[0].equals("Write")) {
+            editor.Write(line.substring(6));
+            undoStack.push("Delete " + String.valueOf(line.length()-6));
+        } else if (parts[0].equals("Delete")) {
+            String deleted = editor.Delete(Integer.parseInt(parts[1]));
+            undoStack.push("Write " + deleted);
+        } else if (parts[0].equals("MoveCursor")) {
+            int moved = editor.MoveCursor(Integer.parseInt(parts[1]));
+            undoStack.push("MoveCursor " + String.valueOf(-1*moved));
+        } else if (parts[0].equals("Print")) {
+            editor.Print();
+        } else if (parts[0].equals("Save")) {
+            editor.Save();
+        }         
+    }
     public static void main(String[] args) {
         TextEditor editor = new TextEditor();
+        Stack undoStack = new Stack();
+        Stack redoStack = new Stack();
         Scanner sc = new Scanner(System.in);
+        System.out.println("Enter the file name: ");
+        String fileString = sc.nextLine();
+        editor.Create(fileString);
         while (true) {
             String line = sc.nextLine();
-            String[] parts = line.split(" ");
-            if (parts[0].equals("Create")) {
-                editor.Create(parts[1]);
-            } else if (parts[0].equals("Write")) {
-                editor.Write(line.substring(6));
-            } else if (parts[0].equals("Delete")) {
-                editor.Delete(Integer.parseInt(parts[1]));
-            } else if (parts[0].equals("MoveCursor")) {
-                editor.MoveCursor(Integer.parseInt(parts[1]));
-            } else if (parts[0].equals("Print")) {
-                editor.Print();
-            } else if (parts[0].equals("Save")) {
-                editor.Save();
-            } else if (parts[0].equals("Exit")) {
-                break;
+            if (line.equals("Undo")) {
+                String command = undoStack.pop();
+                if (command != null) {
+                    handler(editor, redoStack, command);
+                }
             }
+            else if (line.equals("Redo")) {
+                String command = redoStack.pop();
+                if (command != null) {
+                    handler(editor, undoStack, command);
+                }
+            }
+            else if (line.equals("Exit")) {
+                break;
+            }else{
+                redoStack.clear();
+                handler(editor, undoStack, line);
+            }
+            editor.Print();
         }
     }
 
