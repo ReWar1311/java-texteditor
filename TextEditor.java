@@ -1,7 +1,7 @@
 package texteditor;
-import java.util.*;
-import java.io.*;
 
+import java.io.*;
+import java.util.Scanner;
 
 class TextEditor {
     private Node text;
@@ -17,19 +17,25 @@ class TextEditor {
     }
     public void Write(String txt){
         Node temp = this.text.next;
+        Node current = this.text;
         for (int i = 0; i < txt.length(); i++){
-            this.text.next = new Node(txt.charAt(i));
-            this.text.next.prev = this.text;
-            this.text = this.text.next;
+            Node newNode = new Node(txt.charAt(i));
+            newNode.prev = current;
+            current.next = newNode;
+            current = newNode;
         }
         if(temp != null){
-            this.text.next = temp;
+            current.next = temp;
+            temp.prev = current;
         }
+        this.text = current;
     }
-    public String Delete(int k){
-        Node temp = this.text.next;
+    public char Top(){
+        return this.text.value;
+    }
+    public String Delete(int k) {
         String deleted = "";
-        while(k > 0){
+        while (k>0){
             if (this.text.prev == null){
                 break;
             }
@@ -38,17 +44,16 @@ class TextEditor {
             this.text.next.remove();
             k--;
         }
-        if (temp != null){
-            this.text.next = temp;
-        }
         return deleted;
     }
     public int MoveCursor(int k){
+        int moved = 0;
         if (k > 0){
             while(k > 0){
                 if (this.text.next != null){
                     this.text = this.text.next;
                     k--;
+                    moved++;
                 }
                 else{
                     break;
@@ -60,25 +65,39 @@ class TextEditor {
                 if (this.text.prev != null){
                     this.text = this.text.prev;
                     k++;
+                    moved--;
                 }
                 else{
                     break;
                 }
             }
         }
-        return k;
+        return moved;
     }
     public void Print(){
         Node temp = this.text;
+        Node thisText = this.text;
         while(temp.prev != null){
             temp = temp.prev;
         }
         while(temp.next != null){
             System.out.print(temp.value);
+            if (temp == thisText){
+                System.out.print("|");
+            }
             temp = temp.next;
         }
         System.out.print(temp.value);
-        System.out.println();
+        if (temp == thisText){
+            System.out.print("|");
+        }
+        // System.out.println();
+        // System.out.println("Reverse: ");
+        // while(temp.prev != null){
+        //     System.out.print(temp.value);
+        //     temp = temp.prev;
+        // }
+        // System.out.println();
     }
     public void Save(){
         File file = new File(this.filename+"--v"+version+".txt");
@@ -106,23 +125,33 @@ class TextEditor {
         System.out.println("Saved file: " + this.filename+"--v"+version+".txt");
         version++;
     }
-    public static void handler(TextEditor editor, Stack undoStack,String line){
+    public static void handler(TextEditor editor, Stack undoStack, String line) {
         String[] parts = line.split(" ");
         if (parts[0].equals("Write")) {
-            editor.Write(line.substring(6));
-            undoStack.push("Delete " + String.valueOf(line.length()-6));
+            String text = line.substring(6);
+            editor.Write(text);
+            undoStack.push("Delete " + String.valueOf(text.length()));
         } else if (parts[0].equals("Delete")) {
-            String deleted = editor.Delete(Integer.parseInt(parts[1]));
+            int k = Integer.parseInt(parts[1]);
+            String deleted = editor.Delete(k);
             undoStack.push("Write " + deleted);
         } else if (parts[0].equals("MoveCursor")) {
-            int moved = editor.MoveCursor(Integer.parseInt(parts[1]));
-            undoStack.push("MoveCursor " + String.valueOf(-1*moved));
+            int k = Integer.parseInt(parts[1]);
+            int moved = editor.MoveCursor(k);
+            if (moved != 0) {  // Only push to stack if cursor actually moved
+                undoStack.push("MoveCursor " + String.valueOf(-moved));
+            }
         } else if (parts[0].equals("Print")) {
             editor.Print();
         } else if (parts[0].equals("Save")) {
             editor.Save();
-        }         
+        }
+        else if (parts[0].equals("Top")) {
+            System.out.println(editor.Top());
+        }
     }
+    
+    
     public static void main(String[] args) {
         TextEditor editor = new TextEditor();
         Stack undoStack = new Stack();
@@ -135,23 +164,28 @@ class TextEditor {
             String line = sc.nextLine();
             if (line.equals("Undo")) {
                 String command = undoStack.pop();
+                System.out.println("Undoing, Processing Command: " + command);
                 if (command != null) {
                     handler(editor, redoStack, command);
                 }
             }
+            
             else if (line.equals("Redo")) {
                 String command = redoStack.pop();
+                System.out.println("Redoing, Processing Command: " + command);
                 if (command != null) {
                     handler(editor, undoStack, command);
                 }
             }
             else if (line.equals("Exit")) {
+                sc.close();
                 break;
             }else{
                 redoStack.clear();
                 handler(editor, undoStack, line);
             }
             editor.Print();
+            System.out.println();
         }
     }
 

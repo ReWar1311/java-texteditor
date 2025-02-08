@@ -13,10 +13,10 @@ public class Node {
 
     public void remove(){
             if (next != null) {
-                next.prev = prev;
+                next.prev = this.prev;
             }
             if (prev != null) {
-                prev.next = next;
+                prev.next = this.next;
             }
         
     }
