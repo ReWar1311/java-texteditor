@@ -184,7 +184,7 @@ class TextEditor {
                 redoStack.clear();
                 handler(editor, undoStack, line);
             }
-            editor.Print();
+            // editor.Print();
             System.out.println();
         }
     }
